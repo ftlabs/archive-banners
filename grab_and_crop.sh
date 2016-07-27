@@ -25,23 +25,9 @@ error()
     exit 1;
 }
 
-check_for_command()
-{
-	if [[ $# -eq 0 ]]; then
-		error "cannot check for unspecified command"
-	elif [[ $# -eq 1 ]]; then
-		DETAIL=""
-	else
-		DETAIL="You need $2 installed"
-	fi
-	command -v $1 >/dev/null 2>&1 || error "Missing program, '$1'. $DETAIL"
-}
-
-check_for_command convert2 ImageMagick
-check_for_command ffmpeg
-check_for_command wget
-
-exit
+command -v convert >/dev/null 2>&1 || error "Missing program, 'convert'. You need ImageMagick installed."
+command -v ffmpeg  >/dev/null 2>&1 || error "Missing program, 'ffmpeg'."
+command -v wget    >/dev/null 2>&1 || error "Missing program, 'wget'."
 
 if [[ "$MP4_BASE_NAME" = "" ]]; then # for now, any arg means skip creating crops
 
