@@ -14,6 +14,8 @@ BOUNDS_ARTICLES_DIR=./bounds_articles
       SCALED_WIDTH=1080
         PAD_HEIGHT=608
       PAD_Y_OFFSET=196
+               NOW=$(date +"%Y_%m_%d_%H%M_%S")
+     MP4_BASE_NAME=${ANIMATIONS_DIR}/${NOW}_xml_ff_r${FRAMERATE}
 
 mkdir -p $CROPS_DIR
 mkdir -p $ORIGINALS_DIR
@@ -21,7 +23,7 @@ mkdir -p $ANIMATIONS_DIR
 mkdir -p $BOUNDS_ARTICLES_DIR
 mkdir -p $BOUNDS_BANNER_DIR
 
-MP4_BASE_NAME=$1
+FIRST_ARG=$1
 
 error()
 {
@@ -33,7 +35,7 @@ command -v convert >/dev/null 2>&1 || error "Missing program, 'convert'. You nee
 command -v ffmpeg  >/dev/null 2>&1 || error "Missing program, 'ffmpeg'."
 command -v wget    >/dev/null 2>&1 || error "Missing program, 'wget'."
 
-if [[ "$MP4_BASE_NAME" = "" ]]; then # for now, any arg means skip creating crops
+if [[ "$FIRST_ARG" = "" ]]; then # any arg means skip creating crops
 
 	for YEAR in {1888..2010}
 	do
@@ -105,6 +107,8 @@ BEGIN {
 	$mostUp    = 100000;
 	$mostDown  = 0;
 	$mostDownFrontMatter = 0;
+	$MAX_DOWN  = 1100;
+
 }
 @p = split(/\|/, $_); 
 $ti = $p[5];
@@ -113,22 +117,33 @@ if($coords[0] < $mostLeft ) { $mostLeft  = $coords[0] };
 if($coords[1] < $mostUp   ) { $mostUp    = $coords[1] };
 if($coords[2] > $mostRight) { $mostRight = $coords[2] };
 if($coords[3] > $mostDown ) { $mostDown  = $coords[3] };
-if( $ti =~ /Front matter/i and $coords[3] < 1000 ){
+if( $ti =~ /^Front matter|Contents$/i and $coords[3] < $MAX_DOWN ){
 	if($coords[3] > $mostDownFrontMatter){ $mostDownFrontMatter = $coords[3]};
 }
 END {
-	print sprintf("%dx%d+%d+%d", ($mostRight - $mostLeft), ($mostDownFrontMatter - $mostUp), $mostLeft, $mostUp);
+	if (($mostDownFrontMatter <= 0) or ($p[2] eq "Saturday")) {
+		print "";
+	} else {
+		$width  = $mostRight - $mostLeft;
+		$height = $mostDownFrontMatter - $mostUp; 
+
+		if (($width % 2) == 1) { $width += 1; }
+		if (($height % 2) == 1) { $height += 1; }
+
+		print sprintf("%dx%d+%d+%d", $width, $height, $mostLeft, $mostUp);
+	}
 }
 ' > $BOUNDS_BANNER_FILENAME
 						fi
 
-						BOUNDS=$(cat $BOUNDS_BANNER_FILENAME)
+						if [ -s $BOUNDS_BANNER_FILENAME ] ; then
+							BOUNDS=$(cat $BOUNDS_BANNER_FILENAME)
 
-						convert \
-							-crop "$BOUNDS" \
-							$SOURCE_IMAGE_FILENAME \
-							$CROPPED_IMAGE_FILENAME
-							# -crop "${BANNER_CROP_WIDTH}x${BANNER_CROP_HEIGHT}+0+0" \
+							convert \
+								-crop "$BOUNDS" \
+								$SOURCE_IMAGE_FILENAME \
+								$CROPPED_IMAGE_FILENAME
+						fi
 					fi
 				fi
 			done
@@ -136,14 +151,10 @@ END {
 	done
 fi
 
-if [[ "$MP4_BASE_NAME" = "" ]]; then
-	MP4_BASE_NAME=${ANIMATIONS_DIR}/basic_ff_r${FRAMERATE}
-fi
-
        MP4_NAME=${MP4_BASE_NAME}.mp4
 MP4_SCALED_NAME=${MP4_BASE_NAME}_size${SCALED_WIDTH}.mp4
 MP4_PADDED_NAME=${MP4_BASE_NAME}_size${SCALED_WIDTH}_padheight${PAD_HEIGHT}.mp4
 
 ffmpeg -framerate $FRAMERATE -pattern_type glob -i "${CROPS_DIR}/*.JPG" -c:v libx264 -r 30 -pix_fmt yuv420p ${MP4_NAME}
-ffmpeg -i ${MP4_NAME} -vf scale=${SCALED_WIDTH}:-1 ${MP4_SCALED_NAME}
+ffmpeg -i ${MP4_NAME} -vf scale="${SCALED_WIDTH}:trunc(ow/a/2)*2" ${MP4_SCALED_NAME}
 ffmpeg -i ${MP4_SCALED_NAME} -filter_complex "pad=height=${PAD_HEIGHT}:y=${PAD_Y_OFFSET}" ${MP4_PADDED_NAME}
