@@ -2,5 +2,7 @@ originals/*
 crops*/*
 animations/*
 examples/*
+bounds_articles/*
+bounds_banner/*
 .DS_Store
 STOP
