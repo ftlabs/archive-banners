@@ -67,6 +67,10 @@ if [[ "$FIRST_ARG" = "" ]]; then # any arg means skip creating crops
 					wget -O $SOURCE_IMAGE_FILENAME $SOURCE_IMAGE_URL
 				fi
 
+				if [ ! -e $SOURCE_IMAGE_FILENAME ]; then
+					touch $SOURCE_IMAGE_FILENAME 
+				fi
+
 				if [ -s $SOURCE_IMAGE_FILENAME ]; then
 					echo "found non-empty $SOURCE_IMAGE_FILENAME"
 					if [[ -e $CROPPED_IMAGE_FILENAME ]]; then
@@ -102,13 +106,13 @@ if (/<id>([^<]+)<\/id>/) {
 						else
 							cat $BOUNDS_ARTICLES_FILENAME | perl -ne '
 BEGIN {
-	$mostLeft  = 1000000;
-	$mostRight = 0;
-	$mostUp    = 100000;
-	$mostDown  = 0;
+	$mostLeft   = 1000000;
+	$mostRight  = 0;
+	$mostUp     = 100000;
+	$mostDown   = 0;
 	$mostDownFrontMatter = 0;
-	$MAX_DOWN  = 1100;
-
+	$MAX_DOWN   = 1100;
+	$EXTRA_DOWN = 100
 }
 @p = split(/\|/, $_); 
 $ti = $p[5];
@@ -125,12 +129,15 @@ END {
 		print "";
 	} else {
 		$width  = $mostRight - $mostLeft;
-		$height = $mostDownFrontMatter - $mostUp; 
+		$height = $mostDownFrontMatter - $mostUp + $EXTRA_DOWN; 
+
+		$startUp = $mostUp - ($EXTRA_DOWN / 2);
+		if($startUp < 0 ) { $startUp = 0; }
 
 		if (($width % 2) == 1) { $width += 1; }
 		if (($height % 2) == 1) { $height += 1; }
 
-		print sprintf("%dx%d+%d+%d", $width, $height, $mostLeft, $mostUp);
+		print sprintf("%dx%d+%d+%d", $width, $height, $mostLeft, $startUp);
 	}
 }
 ' > $BOUNDS_BANNER_FILENAME

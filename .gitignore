@@ -4,5 +4,6 @@ animations/*
 examples/*
 bounds_articles/*
 bounds_banner/*
+temp/*
 .DS_Store
 STOP
