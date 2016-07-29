@@ -1,9 +1,8 @@
 originals/*
 crops*/*
-animations/*
+animations*/*
 examples/*
-bounds_articles/*
-bounds_banner/*
+bounds*/*
 temp/*
 .DS_Store
 STOP
